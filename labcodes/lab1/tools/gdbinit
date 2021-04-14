@@ -1,16 +1,26 @@
 file bin/kernel
 target remote :1234
 
-# where bootloader start
-b *0x7c00
-# set A20 gate
-b *0x7c0a
-b *0x7c14
-# cr0 , enable protect mode
-b *0x7c24
-
-# read seg from disk
-b *0x7c92
-break kern_init
+## where bootloader start
+#b *0x7c00
+## set A20 gate
+#b *0x7c0a
+#b *0x7c14
+## cr0 , enable protect mode
+#b *0x7c24
+#
+## read seg from disk
+#b *0x7c92
+#break kern_init
+#
+#b cons_init
+#b print_kerninfo
+b grade_backtrace
+b print_stackframe
+b pmm_init
+b pic_init
+b idt_init
+b clock_init
+b intr_enable
 
 continue

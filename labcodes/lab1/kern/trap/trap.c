@@ -46,6 +46,31 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+    extern uintptr_t __vectors[];
+    /* *
+     * Set up a normal interrupt/trap gate descriptor
+     *   - istrap: 1 for a trap (= exception) gate, 0 for an interrupt gate
+     *   - sel: Code segment selector for interrupt/trap handler
+     *   - off: Offset in code segment for interrupt/trap handler
+     *   - dpl: Descriptor Privilege Level - the privilege level required
+     *          for software to invoke this interrupt/trap gate explicitly
+     *          using an int instruction.
+     * */
+    /*
+      for(int i=0; i<=256; i++) {
+      //SETGATE(idt[i], 0, __vector[i], i, dpl);
+      // answer: GD_KTEXT means this code need to put into text(which means code segment.)
+      SETGATE(idt[i], 0, GD_KTEXT, __vector[i], DPL_USER);
+      }
+     */
+    // answer:
+    for(int i = 0 ; i< sizeof(idt)/sizeof(struct gatedesc); i++) {
+        SETGATE(idt[i], 0 , GD_KTEXT, __vectors[i], DPL_USER);
+    }
+
+    cprintf("ide address: %08x \n", &idt);
+
+    lidt(&idt_pd);
 }
 
 static const char *
@@ -147,6 +172,10 @@ trap_dispatch(struct trapframe *tf) {
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+        ticks++;
+        if ( ticks>=TICK_NUM && ticks % TICK_NUM == 0) {
+            print_ticks();
+        }
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
