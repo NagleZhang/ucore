@@ -65,10 +65,11 @@ idt_init(void) {
      */
     // answer:
     for(int i = 0 ; i< sizeof(idt)/sizeof(struct gatedesc); i++) {
-        SETGATE(idt[i], 0 , GD_KTEXT, __vectors[i], DPL_USER);
+        SETGATE(idt[i], 0 , GD_KTEXT, __vectors[i], DPL_KERNEL);
     }
 
-    cprintf("ide address: %08x \n", &idt);
+    cprintf("ide address: 0x%08x \n", &idt);
+    SETGATE(idt[T_SWITCH_TOK], 0, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
 
     lidt(&idt_pd);
 }
@@ -187,8 +188,11 @@ trap_dispatch(struct trapframe *tf) {
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
+        cprintf("trap into user-mode\n");
+        break;
     case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
+        cprintf("trap into kernel-mode\n");
+        //panic("T_SWITCH_** ??\n");
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:

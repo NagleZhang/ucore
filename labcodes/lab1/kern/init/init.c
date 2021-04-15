@@ -37,7 +37,7 @@ kern_init(void) {
 
     //LAB1: CAHLLENGE 1 If you try to do it, uncomment lab1_switch_test()
     // user/kernel mode switch test
-    //lab1_switch_test();
+    lab1_switch_test();
 
     /* do nothing */
     while (1);
@@ -84,11 +84,43 @@ lab1_print_cur_status(void) {
 static void
 lab1_switch_to_user(void) {
     //LAB1 CHALLENGE 1 : TODO
+    /* wrong code
+    struct trapframe *tf;
+    tf -> tf_trapno = T_SWITCH_TOU;
+    trap(tf);
+    */
+    // don't know why moving ebp to esp
+    asm volatile (
+                  "sub $0x8, %%esp\n"
+                  "int %0 \n"
+                  "movl %%ebp, %%esp"
+                  :
+                  : "i"(T_SWITCH_TOU)
+                  );
 }
 
 static void
 lab1_switch_to_kernel(void) {
     //LAB1 CHALLENGE 1 :  TODO
+    /*  wrong code
+    struct trapframe *tf;
+    tf -> tf_trapno = T_SWITCH_TOK;
+    trap(tf);
+    */
+
+    /*
+      问题: 这里为什么 int 中断号 就会调用 trap() 这个函数? 这些是如何串起来的?
+      答: 逻辑是这样的: lidt 之后, idt table 已经完成
+      int 会去找 idt , 然后 idt 里面的 vector 会指向某个进程, 而这个 vector 会执行具体的代码
+      该代码在 trapentry.S 当中可以找到, 可以看到里面有具体跳转到 trap() 这个函数的指令.
+     */
+    asm volatile (
+                  "sub $0x8, %%esp \n"
+                  "int %0 \n"
+                  "movl %%ebp, %%esp"
+                  :
+                  : "i"(T_SWITCH_TOK)
+                  );
 }
 
 static void
