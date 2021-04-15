@@ -187,11 +187,38 @@ trap_dispatch(struct trapframe *tf) {
         cprintf("kbd [%03d] %c\n", c, c);
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
+    /*
+      在这个地方对状态进行修改. 问题是 x86 如何修改特权级
+      1. 修改 cs 的值。所以 kernel 和 user 执行的 text 位置是不同的。
+      2. 修改 es/ss 的栈寄存器， ds 数据寄存器。
+      3. 修改状态寄存器， eflags ，确保能够 io。
+      4. 将修改好的 trapframe 替换之前的 trapframe
+    */
     case T_SWITCH_TOU:
         cprintf("trap into user-mode\n");
+        if (tf->tf_cs != USER_CS) {
+            cprintf("now is in kernel-mode. let's move to user mode \n");
+            struct trapframe u = *tf;
+            u.tf_cs = USER_CS;
+            u.tf_es = u.tf_ds = u.tf_ss = USER_DS;
+            u.tf_esp = (uint32_t)tf + sizeof(struct trapframe) -8;
+
+            u.tf_eflags |= FL_IOPL_MASK;
+
+            *((uint32_t *)tf -1) = (uint32_t)&u;
+        }
         break;
     case T_SWITCH_TOK:
         cprintf("trap into kernel-mode\n");
+        if (tf->tf_cs != KERNEL_CS) {
+            cprintf("now in user mode. let's move to kernel model;\n");
+            tf->tf_cs = KERNEL_CS;
+            tf->tf_ds = tf->tf_es = KERNEL_CS;
+            tf->tf_eflags &= ~FL_IOPL_MASK;
+            struct trapframe *switchu2k = (struct trapframe *)(tf->tf_esp - (sizeof(struct trapframe) - 8));
+            memmove(switchu2k, tf, sizeof(struct trapframe) - 8);
+            *((uint32_t *)tf - 1) = (uint32_t)switchu2k;
+        }
         //panic("T_SWITCH_** ??\n");
         break;
     case IRQ_OFFSET + IRQ_IDE1:
